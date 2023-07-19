@@ -2,7 +2,7 @@ require 'sqlite3'
 
 
 class MyDatabase
-    def initialize(filename, username)
+    def initialize(filename, username, opponent = false)
         @db = SQLite3::Database.new(filename)
         user = @db.execute("SELECT player_id from player where name = '#{username}'")
         if user.empty?
@@ -10,16 +10,30 @@ class MyDatabase
         end
         my_id = user.first.first
 
-        # 自分がplayer0
-        @sessions0 = @db.execute("SELECT session_id, result, length, place from session where player_id0 = #{my_id} and length > 0")
-        # 自分がplayer1
-        @sessions1 = @db.execute("SELECT session_id, result, length, place from session where player_id1 = #{my_id} and length > 0")
+        if opponent
+            # 自分がplayer1
+            @sessions0 = @db.execute("SELECT session_id, result, length, place from session where player_id1 = #{my_id} and length > 0")
+            # 自分がplayer0
+            @sessions1 = @db.execute("SELECT session_id, result, length, place from session where player_id0 = #{my_id} and length > 0")
 
-        # 自分がplayer0のgame
-        @games0 = @db.execute("SELECT session_id, game_number, game_id, score_0, score_1, crawford, result from game where player_id0 = #{my_id}")
-        # 自分がplayer1のgame
-        @games1 = @db.execute("SELECT session_id, game_number, game_id, score_1, score_0, crawford, result from game where player_id1 = #{my_id}")
-        @gamestats = @db.execute("SELECT game_id, chequer_error_total_normalised, unforced_moves, chequer_error_per_move_normalised, cube_error_total_normalised, close_cube_decisions, cube_error_per_move_normalised, overall_error_total_normalised, overall_error_per_move_normalised, error_missed_doubles_below_cp_normalised, error_missed_doubles_above_cp_normalised, error_wrong_doubles_below_dp_normalised, error_wrong_doubles_above_tg_normalised, error_wrong_takes_normalised, error_wrong_passes_normalised from gamestat where player_id = #{my_id}").to_h { |row| [row[0], row] }
+            # 自分がplayer1のgame
+            @games0 = @db.execute("SELECT session_id, game_number, game_id, score_0, score_1, crawford, result from game where player_id1 = #{my_id}")
+            # 自分がplayer0のgame
+            @games1 = @db.execute("SELECT session_id, game_number, game_id, score_1, score_0, crawford, result from game where player_id0 = #{my_id}")
+            @gamestats = @db.execute("SELECT game_id, chequer_error_total_normalised, unforced_moves, chequer_error_per_move_normalised, cube_error_total_normalised, close_cube_decisions, cube_error_per_move_normalised, overall_error_total_normalised, overall_error_per_move_normalised, error_missed_doubles_below_cp_normalised, error_missed_doubles_above_cp_normalised, error_wrong_doubles_below_dp_normalised, error_wrong_doubles_above_tg_normalised, error_wrong_takes_normalised, error_wrong_passes_normalised from gamestat where player_id != #{my_id}").to_h { |row| [row[0], row] }
+
+        else
+            # 自分がplayer0
+            @sessions0 = @db.execute("SELECT session_id, result, length, place from session where player_id0 = #{my_id} and length > 0")
+            # 自分がplayer1
+            @sessions1 = @db.execute("SELECT session_id, result, length, place from session where player_id1 = #{my_id} and length > 0")
+
+            # 自分がplayer0のgame
+            @games0 = @db.execute("SELECT session_id, game_number, game_id, score_0, score_1, crawford, result from game where player_id0 = #{my_id}")
+            # 自分がplayer1のgame
+            @games1 = @db.execute("SELECT session_id, game_number, game_id, score_1, score_0, crawford, result from game where player_id1 = #{my_id}")
+            @gamestats = @db.execute("SELECT game_id, chequer_error_total_normalised, unforced_moves, chequer_error_per_move_normalised, cube_error_total_normalised, close_cube_decisions, cube_error_per_move_normalised, overall_error_total_normalised, overall_error_per_move_normalised, error_missed_doubles_below_cp_normalised, error_missed_doubles_above_cp_normalised, error_wrong_doubles_below_dp_normalised, error_wrong_doubles_above_tg_normalised, error_wrong_takes_normalised, error_wrong_passes_normalised from gamestat where player_id = #{my_id}").to_h { |row| [row[0], row] }
+        end
     end
 
     def er_data(my_away, your_away)
@@ -113,9 +127,9 @@ class MyDatabase
     end
 end
 
-data = MyDatabase.new('./aldentea2023.db', 'aldentea')
+data = MyDatabase.new('./aldentea2022.db', 'aldentea', true)
 
-File.open('er-table_aldentea2023a.csv', 'w') { |file| 
+File.open('er-table_opponent2022.csv', 'w') { |file| 
 
 
     0.upto(7) do |my_away|
